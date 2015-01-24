@@ -1,0 +1,2 @@
+# cazypedia
+Cazypedia Wiki
