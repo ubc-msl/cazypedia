@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Amire80",
+			"YaronSh"
+		]
+	},
+	"multiboilerplate-desc": "הוספת טקסט קבוע מראש לבחירה מתפריט נפתח מעל תיבת העריכה",
+	"multiboilerplate-legend": "בחירת טקסט קבוע מראש",
+	"multiboilerplate-submit": "טעינה",
+	"specialboilerplate-desc": "דף מיוחד להצגת כל הטקסטים הקבועים מראש שהוגדרו",
+	"boilerplates": "טקסטים קבועים מראש",
+	"multiboilerplate-special-pagetext": "אפשר לטעון את התבניות הבאות מראש בזמן יצירת הדף. (<span class=plainlinks>[{{fullurl:הדף הזה אינו קיים|action=edit}} הדגמה]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "טקסטים קבועים מראש מוגדרים ב־LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "טקסטים קבועים מראש מוגדרים ב־[[MediaWiki:Multiboilerplate]]."
+}

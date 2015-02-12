@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"ChrisPtDe"
+		]
+	},
+	"multiboilerplate-legend": "Chouèsir la pâge a apondre",
+	"multiboilerplate-submit": "Chargiér",
+	"boilerplates": "Modèlos disponiblos",
+	"multiboilerplate-special-define-in-localsettings": "Los modèlos sont dèfenis dens LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Los modèlos sont dèfenis dens [[MediaWiki:Multiboilerplate]]."
+}

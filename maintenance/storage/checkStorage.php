@@ -22,7 +22,7 @@
  */
 
 if ( !defined( 'MEDIAWIKI' ) ) {
-	require_once( dirname( __FILE__ ) . '/../commandLine.inc' );
+	require_once __DIR__ . '/../commandLine.inc';
 
 	$cs = new CheckStorage;
 	$fix = isset( $options['fix'] );
@@ -34,18 +34,19 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	$cs->check( $fix, $xml );
 }
 
-
 // ----------------------------------------------------------------------------------
 
 /**
+ * Maintenance script to do various checks on external storage.
+ *
  * @ingroup Maintenance ExternalStorage
  */
 class CheckStorage {
 	const CONCAT_HEADER = 'O:27:"concatenatedgziphistoryblob"';
-	var $oldIdMap, $errors;
-	var $dbStore = null;
+	public $oldIdMap, $errors;
+	public $dbStore = null;
 
-	var $errorDescriptions = array(
+	public $errorDescriptions = array(
 		'restore text' => 'Damaged text, need to be restored from a backup',
 		'restore revision' => 'Damaged revision row, need to be restored from a backup',
 		'unfixable' => 'Unexpected errors with no automated fixing method',
@@ -73,7 +74,7 @@ class CheckStorage {
 			'fixable' => array(),
 		);
 
-		for ( $chunkStart = 1 ; $chunkStart < $maxRevId; $chunkStart += $chunkSize ) {
+		for ( $chunkStart = 1; $chunkStart < $maxRevId; $chunkStart += $chunkSize ) {
 			$chunkEnd = $chunkStart + $chunkSize - 1;
 			// print "$chunkStart of $maxRevId\n";
 
@@ -210,8 +211,12 @@ class CheckStorage {
 			$curIds = array();
 			if ( count( $objectRevs ) ) {
 				$headerLength = 300;
-				$res = $dbr->select( 'text', array( 'old_id', 'old_flags', "LEFT(old_text, $headerLength) AS header" ),
-					array( 'old_id IN (' . implode( ',', $objectRevs ) . ')' ), __METHOD__ );
+				$res = $dbr->select(
+					'text',
+					array( 'old_id', 'old_flags', "LEFT(old_text, $headerLength) AS header" ),
+					array( 'old_id IN (' . implode( ',', $objectRevs ) . ')' ),
+					__METHOD__
+				);
 				foreach ( $res as $row ) {
 					$oldId = $row->old_id;
 					$matches = array();
@@ -222,7 +227,11 @@ class CheckStorage {
 
 					$className = strtolower( $matches[2] );
 					if ( strlen( $className ) != $matches[1] ) {
-						$this->error( 'restore text', "Error: invalid object header, wrong class name length", $oldId );
+						$this->error(
+							'restore text',
+							"Error: invalid object header, wrong class name length",
+							$oldId
+						);
 						continue;
 					}
 
@@ -261,8 +270,12 @@ class CheckStorage {
 			$externalConcatBlobs = array();
 			if ( count( $concatBlobs ) ) {
 				$headerLength = 300;
-				$res = $dbr->select( 'text', array( 'old_id', 'old_flags', "LEFT(old_text, $headerLength) AS header" ),
-					array( 'old_id IN (' . implode( ',', array_keys( $concatBlobs ) ) . ')' ), __METHOD__ );
+				$res = $dbr->select(
+					'text',
+					array( 'old_id', 'old_flags', "LEFT(old_text, $headerLength) AS header" ),
+					array( 'old_id IN (' . implode( ',', array_keys( $concatBlobs ) ) . ')' ),
+					__METHOD__
+				);
 				foreach ( $res as $row ) {
 					$flags = explode( ',', $row->old_flags );
 					if ( in_array( 'external', $flags ) ) {
@@ -270,7 +283,11 @@ class CheckStorage {
 						if ( in_array( 'object', $flags ) ) {
 							$urlParts = explode( '/', $row->header );
 							if ( $urlParts[0] != 'DB:' ) {
-								$this->error( 'unfixable', "Error: unrecognised external storage type \"{$urlParts[0]}", $row->old_id );
+								$this->error(
+									'unfixable',
+									"Error: unrecognised external storage type \"{$urlParts[0]}",
+									$row->old_id
+								);
 							} else {
 								$cluster = $urlParts[2];
 								$id = $urlParts[3];
@@ -282,12 +299,20 @@ class CheckStorage {
 								);
 							}
 						} else {
-							$this->error( 'unfixable', "Error: invalid flags \"{$row->old_flags}\" on concat bulk row {$row->old_id}",
+							$this->error(
+								'unfixable',
+								"Error: invalid flags \"{$row->old_flags}\" on concat bulk row {$row->old_id}",
 								$concatBlobs[$row->old_id] );
 						}
-					} elseif ( strcasecmp( substr( $row->header, 0, strlen( self::CONCAT_HEADER ) ), self::CONCAT_HEADER ) ) {
-						$this->error( 'restore text', "Error: Incorrect object header for concat bulk row {$row->old_id}",
-							$concatBlobs[$row->old_id] );
+					} elseif ( strcasecmp(
+						substr( $row->header, 0, strlen( self::CONCAT_HEADER ) ),
+						self::CONCAT_HEADER
+					) ) {
+						$this->error(
+							'restore text',
+							"Error: Incorrect object header for concat bulk row {$row->old_id}",
+							$concatBlobs[$row->old_id]
+						);
 					} # else good
 
 					unset( $concatBlobs[$row->old_id] );
@@ -297,7 +322,6 @@ class CheckStorage {
 
 			// Check targets of unresolved stubs
 			$this->checkExternalConcatBlobs( $externalConcatBlobs );
-
 			// next chunk
 		}
 
@@ -328,7 +352,6 @@ class CheckStorage {
 			printf( "%-30s %10d %5.2f%%\n", $className, $count, $count / $total * 100 );
 		}
 	}
-
 
 	function error( $type, $msg, $ids ) {
 		if ( is_array( $ids ) && count( $ids ) == 1 ) {
@@ -372,23 +395,30 @@ class CheckStorage {
 				array( 'blob_id IN( ' . implode( ',', $blobIds ) . ')' ), __METHOD__ );
 			foreach ( $res as $row ) {
 				if ( strcasecmp( $row->header, self::CONCAT_HEADER ) ) {
-					$this->error( 'restore text', "Error: invalid header on target $cluster/{$row->blob_id} of two-part ES URL",
-						$oldIds[$row->blob_id] );
+					$this->error(
+						'restore text',
+						"Error: invalid header on target $cluster/{$row->blob_id} of two-part ES URL",
+						$oldIds[$row->blob_id]
+					);
 				}
 				unset( $oldIds[$row->blob_id] );
-
 			}
 			$extDb->freeResult( $res );
 
 			// Print errors for missing blobs rows
-			foreach ( $oldIds as $blobId => $oldIds ) {
-				$this->error( 'restore text', "Error: missing target $cluster/$blobId for two-part ES URL", $oldIds );
+			foreach ( $oldIds as $blobId => $oldIds2 ) {
+				$this->error(
+					'restore text',
+					"Error: missing target $cluster/$blobId for two-part ES URL",
+					$oldIds2
+				);
 			}
 		}
 	}
 
 	function restoreText( $revIds, $xml ) {
-		global $wgTmpDirectory, $wgDBname;
+		global $wgDBname;
+		$tmpDir = wfTempDir();
 
 		if ( !count( $revIds ) ) {
 			return;
@@ -396,12 +426,13 @@ class CheckStorage {
 
 		print "Restoring text from XML backup...\n";
 
-		$revFileName = "$wgTmpDirectory/broken-revlist-$wgDBname";
-		$filteredXmlFileName = "$wgTmpDirectory/filtered-$wgDBname.xml";
+		$revFileName = "$tmpDir/broken-revlist-$wgDBname";
+		$filteredXmlFileName = "$tmpDir/filtered-$wgDBname.xml";
 
 		// Write revision list
 		if ( !file_put_contents( $revFileName, implode( "\n", $revIds ) ) ) {
 			echo "Error writing revision list, can't restore text\n";
+
 			return;
 		}
 
@@ -418,12 +449,14 @@ class CheckStorage {
 
 		if ( $exitStatus ) {
 			echo "mwdumper died with exit status $exitStatus\n";
+
 			return;
 		}
 
 		$file = fopen( $filteredXmlFileName, 'r' );
 		if ( !$file ) {
 			echo "Unable to open filtered XML file\n";
+
 			return;
 		}
 
@@ -440,20 +473,31 @@ class CheckStorage {
 
 	function importRevision( &$revision, &$importer ) {
 		$id = $revision->getID();
-		$text = $revision->getText();
+		$content = $revision->getContent( Revision::RAW );
+		$id = $id ? $id : '';
+
+		if ( $content === null ) {
+			echo "Revision $id is broken, we have no content available\n";
+
+			return;
+		}
+
+		$text = $content->serialize();
 		if ( $text === '' ) {
 			// This is what happens if the revision was broken at the time the
 			// dump was made. Unfortunately, it also happens if the revision was
 			// legitimately blank, so there's no way to tell the difference. To
 			// be safe, we'll skip it and leave it broken
-			$id = $id ? $id : '';
+
 			echo "Revision $id is blank in the dump, may have been broken before export\n";
+
 			return;
 		}
 
-		if ( !$id )  {
+		if ( !$id ) {
 			// No ID, can't import
 			echo "No id tag in revision, can't import\n";
+
 			return;
 		}
 
@@ -462,6 +506,7 @@ class CheckStorage {
 		$oldId = $dbr->selectField( 'revision', 'rev_text_id', array( 'rev_id' => $id ), __METHOD__ );
 		if ( !$oldId ) {
 			echo "Missing revision row for rev_id $id\n";
+
 			return;
 		}
 
@@ -481,4 +526,3 @@ class CheckStorage {
 		$this->errors['fixed'][$id] = true;
 	}
 }
-

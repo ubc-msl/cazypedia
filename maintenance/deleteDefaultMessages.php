@@ -18,16 +18,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  *
+ * @file
  * @ingroup Maintenance
  */
 
-require_once( dirname( __FILE__ ) . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
+/**
+ * Maintenance script that deletes all pages in the MediaWiki namespace
+ * which were last edited by "MediaWiki default".
+ *
+ * @ingroup Maintenance
+ */
 class DeleteDefaultMessages extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = "Deletes all pages in the MediaWiki namespace" .
-								" which were last edited by \"MediaWiki default\"";
+			" which were last edited by \"MediaWiki default\"";
 	}
 
 	public function execute() {
@@ -44,9 +51,10 @@ class DeleteDefaultMessages extends Maintenance {
 			)
 		);
 
-		if( $dbr->numRows( $res ) == 0 ) {
+		if ( $dbr->numRows( $res ) == 0 ) {
 			# No more messages left
 			$this->output( "done.\n" );
+
 			return;
 		}
 
@@ -68,15 +76,15 @@ class DeleteDefaultMessages extends Maintenance {
 			$dbw->ping();
 			$title = Title::makeTitle( $row->page_namespace, $row->page_title );
 			$page = WikiPage::factory( $title );
-			$dbw->begin();
+			$dbw->begin( __METHOD__ );
 			$error = ''; // Passed by ref
 			$page->doDeleteArticle( 'No longer required', false, 0, false, $error, $user );
-			$dbw->commit();
+			$dbw->commit( __METHOD__ );
 		}
 
-		$this->output( 'done!', 'msg' );
+		$this->output( "done!\n", 'msg' );
 	}
 }
 
 $maintClass = "DeleteDefaultMessages";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

@@ -28,23 +28,24 @@
  * member variable and provide accessors to it.
  */
 abstract class ContextSource implements IContextSource {
-
 	/**
 	 * @var IContextSource
 	 */
 	private $context;
 
 	/**
-	 * Get the RequestContext object
+	 * Get the base IContextSource object
 	 * @since 1.18
-	 * @return RequestContext
+	 * @return IContextSource
 	 */
 	public function getContext() {
 		if ( $this->context === null ) {
 			$class = get_class( $this );
-			wfDebug( __METHOD__  . " ($class): called and \$context is null. Using RequestContext::getMain() for sanity\n" );
+			wfDebug( __METHOD__ . " ($class): called and \$context is null. " .
+				"Using RequestContext::getMain() for sanity\n" );
 			$this->context = RequestContext::getMain();
 		}
+
 		return $this->context;
 	}
 
@@ -52,10 +53,20 @@ abstract class ContextSource implements IContextSource {
 	 * Set the IContextSource object
 	 *
 	 * @since 1.18
-	 * @param $context IContextSource
+	 * @param IContextSource $context
 	 */
 	public function setContext( IContextSource $context ) {
 		$this->context = $context;
+	}
+
+	/**
+	 * Get the Config object
+	 *
+	 * @since 1.23
+	 * @return Config
+	 */
+	public function getConfig() {
+		return $this->getContext()->getConfig();
 	}
 
 	/**
@@ -72,7 +83,7 @@ abstract class ContextSource implements IContextSource {
 	 * Get the Title object
 	 *
 	 * @since 1.18
-	 * @return Title
+	 * @return Title|null
 	 */
 	public function getTitle() {
 		return $this->getContext()->getTitle();
@@ -107,7 +118,7 @@ abstract class ContextSource implements IContextSource {
 	 * Get the OutputPage object
 	 *
 	 * @since 1.18
-	 * @return OutputPage object
+	 * @return OutputPage
 	 */
 	public function getOutput() {
 		return $this->getContext()->getOutput();
@@ -121,17 +132,6 @@ abstract class ContextSource implements IContextSource {
 	 */
 	public function getUser() {
 		return $this->getContext()->getUser();
-	}
-
-	/**
-	 * Get the Language object
-	 *
-	 * @deprecated 1.19 Use getLanguage instead
-	 * @return Language
-	 */
-	public function getLang() {
-		wfDeprecated( __METHOD__, '1.19' );
-		return $this->getLanguage();
 	}
 
 	/**
@@ -159,12 +159,22 @@ abstract class ContextSource implements IContextSource {
 	 * Parameters are the same as wfMessage()
 	 *
 	 * @since 1.18
-	 * @return Message object
+	 * @return Message
 	 */
 	public function msg( /* $args */ ) {
 		$args = func_get_args();
+
 		return call_user_func_array( array( $this->getContext(), 'msg' ), $args );
 	}
-	
-}
 
+	/**
+	 * Export the resolved user IP, HTTP headers, user ID, and session ID.
+	 * The result will be reasonably sized to allow for serialization.
+	 *
+	 * @return array
+	 * @since 1.21
+	 */
+	public function exportSession() {
+		return $this->getContext()->exportSession();
+	}
+}

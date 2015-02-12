@@ -1,5 +1,7 @@
 <?php
 /**
+ * Implements Special:Unblock
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -30,16 +32,21 @@ class SpecialUnblock extends SpecialPage {
 	protected $type;
 	protected $block;
 
-	public function __construct(){
+	public function __construct() {
 		parent::__construct( 'Unblock', 'block' );
 	}
 
-	public function execute( $par ){
+	public function execute( $par ) {
 		$this->checkPermissions();
 		$this->checkReadOnly();
 
 		list( $this->target, $this->type ) = SpecialBlock::getTargetAndType( $par, $this->getRequest() );
 		$this->block = Block::newFromTarget( $this->target );
+		if ( $this->target instanceof User ) {
+			# Set the 'relevant user' in the skin, so it displays links like Contributions,
+			# User logs, UserRights, etc.
+			$this->getSkin()->setRelevantUser( $this->target );
+		}
 
 		$this->setHeaders();
 		$this->outputHeader();
@@ -49,40 +56,42 @@ class SpecialUnblock extends SpecialPage {
 		$out->addModules( 'mediawiki.special' );
 
 		$form = new HTMLForm( $this->getFields(), $this->getContext() );
-		$form->setWrapperLegend( wfMsg( 'unblockip' ) );
+		$form->setWrapperLegendMsg( 'unblockip' );
 		$form->setSubmitCallback( array( __CLASS__, 'processUIUnblock' ) );
-		$form->setSubmitText( wfMsg( 'ipusubmit' ) );
-		$form->addPreText( wfMsgExt( 'unblockiptext', 'parse' ) );
+		$form->setSubmitTextMsg( 'ipusubmit' );
+		$form->addPreText( $this->msg( 'unblockiptext' )->parseAsBlock() );
 
-		if( $form->show() ){
-			switch( $this->type ){
-				case Block::TYPE_USER:
+		if ( $form->show() ) {
+			switch ( $this->type ) {
 				case Block::TYPE_IP:
-					$out->addWikiMsg( 'unblocked',  $this->target );
+					$out->addWikiMsg( 'unblocked-ip', wfEscapeWikiText( $this->target ) );
+					break;
+				case Block::TYPE_USER:
+					$out->addWikiMsg( 'unblocked', wfEscapeWikiText( $this->target ) );
 					break;
 				case Block::TYPE_RANGE:
-					$out->addWikiMsg( 'unblocked-range', $this->target );
+					$out->addWikiMsg( 'unblocked-range', wfEscapeWikiText( $this->target ) );
 					break;
 				case Block::TYPE_ID:
 				case Block::TYPE_AUTO:
-					$out->addWikiMsg( 'unblocked-id', $this->target );
+					$out->addWikiMsg( 'unblocked-id', wfEscapeWikiText( $this->target ) );
 					break;
 			}
 		}
 	}
 
-	protected function getFields(){
+	protected function getFields() {
 		$fields = array(
 			'Target' => array(
 				'type' => 'text',
-				'label-message' => 'ipadressorusername',
-				'tabindex' => '1',
+				'label-message' => 'ipaddressorusername',
+				'autofocus' => true,
 				'size' => '45',
 				'required' => true,
 			),
 			'Name' => array(
 				'type' => 'info',
-				'label-message' => 'ipadressorusername',
+				'label-message' => 'ipaddressorusername',
 			),
 			'Reason' => array(
 				'type' => 'text',
@@ -90,23 +99,28 @@ class SpecialUnblock extends SpecialPage {
 			)
 		);
 
-		if( $this->block instanceof Block ){
+		if ( $this->block instanceof Block ) {
 			list( $target, $type ) = $this->block->getTargetAndType();
 
 			# Autoblocks are logged as "autoblock #123 because the IP was recently used by
 			# User:Foo, and we've just got any block, auto or not, that applies to a target
 			# the user has specified.  Someone could be fishing to connect IPs to autoblocks,
 			# so don't show any distinction between unblocked IPs and autoblocked IPs
-			if( $type == Block::TYPE_AUTO && $this->type == Block::TYPE_IP ){
+			if ( $type == Block::TYPE_AUTO && $this->type == Block::TYPE_IP ) {
 				$fields['Target']['default'] = $this->target;
 				unset( $fields['Name'] );
-
 			} else {
 				$fields['Target']['default'] = $target;
 				$fields['Target']['type'] = 'hidden';
-				switch( $type ){
-					case Block::TYPE_USER:
+				switch ( $type ) {
 					case Block::TYPE_IP:
+						$fields['Name']['default'] = Linker::linkKnown(
+							SpecialPage::getTitleFor( 'Contributions', $target->getName() ),
+							$target->getName()
+						);
+						$fields['Name']['raw'] = true;
+						break;
+					case Block::TYPE_USER:
 						$fields['Name']['default'] = Linker::link(
 							$target->getUserPage(),
 							$target->getName()
@@ -125,17 +139,23 @@ class SpecialUnblock extends SpecialPage {
 						$fields['Target']['default'] = "#{$this->target}";
 						break;
 				}
+				// target is hidden, so the reason is the first element
+				$fields['Target']['autofocus'] = false;
+				$fields['Reason']['autofocus'] = true;
 			}
-
 		} else {
 			$fields['Target']['default'] = $this->target;
 			unset( $fields['Name'] );
 		}
+
 		return $fields;
 	}
 
 	/**
 	 * Submit callback for an HTMLForm object
+	 * @param array $data
+	 * @param HTMLForm $form
+	 * @return array|bool Array(message key, parameters)
 	 */
 	public static function processUIUnblock( array $data, HTMLForm $form ) {
 		return self::processUnblock( $data, $form->getContext() );
@@ -144,16 +164,17 @@ class SpecialUnblock extends SpecialPage {
 	/**
 	 * Process the form
 	 *
-	 * @param $data Array
-	 * @param $context IContextSource
-	 * @return Array( Array(message key, parameters) ) on failure, True on success
+	 * @param array $data
+	 * @param IContextSource $context
+	 * @throws ErrorPageError
+	 * @return array|bool Array(message key, parameters) on failure, True on success
 	 */
-	public static function processUnblock( array $data, IContextSource $context ){
+	public static function processUnblock( array $data, IContextSource $context ) {
 		$performer = $context->getUser();
 		$target = $data['Target'];
 		$block = Block::newFromTarget( $data['Target'] );
 
-		if( !$block instanceof Block ){
+		if ( !$block instanceof Block ) {
 			return array( array( 'ipb_cant_unblock', $target ) );
 		}
 
@@ -168,14 +189,15 @@ class SpecialUnblock extends SpecialPage {
 		# If the specified IP is a single address, and the block is a range block, don't
 		# unblock the whole range.
 		list( $target, $type ) = SpecialBlock::getTargetAndType( $target );
-		if( $block->getType() == Block::TYPE_RANGE && $type == Block::TYPE_IP ) {
-			 $range = $block->getTarget();
-			 return array( array( 'ipb_blocked_as_range', $target, $range ) );
+		if ( $block->getType() == Block::TYPE_RANGE && $type == Block::TYPE_IP ) {
+			$range = $block->getTarget();
+
+			return array( array( 'ipb_blocked_as_range', $target, $range ) );
 		}
 
 		# If the name was hidden and the blocking user cannot hide
 		# names, then don't allow any block removals...
-		if( !$performer->isAllowed( 'hideuser' ) && $block->mHideName ) {
+		if ( !$performer->isAllowed( 'hideuser' ) && $block->mHideName ) {
 			return array( 'unblock-hideuser' );
 		}
 
@@ -185,7 +207,7 @@ class SpecialUnblock extends SpecialPage {
 		}
 
 		# Unset _deleted fields as needed
-		if( $block->mHideName ) {
+		if ( $block->mHideName ) {
 			# Something is deeply FUBAR if this is not a User object, but who knows?
 			$id = $block->getTarget() instanceof User
 				? $block->getTarget()->getID()
@@ -205,8 +227,12 @@ class SpecialUnblock extends SpecialPage {
 
 		# Make log entry
 		$log = new LogPage( 'block' );
-		$log->addEntry( 'unblock', $page, $data['Reason'] );
+		$log->addEntry( 'unblock', $page, $data['Reason'], array(), $performer );
 
 		return true;
+	}
+
+	protected function getGroupName() {
+		return 'users';
 	}
 }

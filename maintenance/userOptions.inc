@@ -25,12 +25,12 @@
 $options = array( 'list', 'nowarn', 'quiet', 'usage', 'dry' );
 $optionsWithArgs = array( 'old', 'new' );
 
-require_once( dirname( __FILE__ ) . '/commandLine.inc' );
+require_once __DIR__ . '/commandLine.inc';
 
 /**
  * @ingroup Maintenance
  */
-class userOptions {
+class UserOptions {
 	public $mQuick;
 	public $mQuiet;
 	public $mDry;
@@ -38,31 +38,34 @@ class userOptions {
 	public $mOldValue;
 	public $mNewValue;
 
-	private $mMode, $mReady ;
+	private $mMode, $mReady;
 
-	/** Constructor. Will show usage and exit if script options are not correct */
+	/**
+	 * Constructor. Will show usage and exit if script options are not correct
+	 * @param array $opts
+	 * @param array $args
+	 */
 	function __construct( $opts, $args ) {
 		if ( !$this->checkOpts( $opts, $args ) ) {
-			userOptions::showUsageAndExit();
+			UserOptions::showUsageAndExit();
 		} else {
 			$this->mReady = $this->initializeOpts( $opts, $args );
 		}
 	}
 
-
 	/**
 	 * This is used to check options. Only needed on construction
 	 *
-	 * @param $opts array
-	 * @param $args array
+	 * @param array $opts
+	 * @param array $args
 	 *
 	 * @return bool
 	 */
 	private function checkOpts( $opts, $args ) {
 		// The three possible ways to run the script:
-		$list   = isset( $opts['list'] );
-		$usage  = isset( $opts['usage'] ) && ( count( $args ) <= 1 );
-		$change = isset( $opts['old'] ) && isset( $opts['new'] ) && ( count( $args ) <= 1 ) ;
+		$list = isset( $opts['list'] );
+		$usage = isset( $opts['usage'] ) && ( count( $args ) <= 1 );
+		$change = isset( $opts['old'] ) && isset( $opts['new'] ) && ( count( $args ) <= 1 );
 
 		// We want only one of them
 		$isValid = ( ( $list + $usage + $change ) == 1 );
@@ -73,27 +76,27 @@ class userOptions {
 	/**
 	 * load script options in the object
 	 *
-	 * @param $opts array
-	 * @param $args array
+	 * @param array $opts
+	 * @param array $args
 	 *
-	 * @return true
+	 * @return bool
 	 */
 	private function initializeOpts( $opts, $args ) {
 
 		$this->mQuick = isset( $opts['nowarn'] );
 		$this->mQuiet = isset( $opts['quiet'] );
-		$this->mDry   = isset( $opts['dry'] );
+		$this->mDry = isset( $opts['dry'] );
 
 		// Set object properties, specially 'mMode' used by run()
 		if ( isset( $opts['list'] ) ) {
-			$this->mMode = 'LISTER' ;
+			$this->mMode = 'LISTER';
 		} elseif ( isset( $opts['usage'] ) ) {
-			$this->mMode = 'USAGER' ;
-			$this->mAnOption = isset( $args[0] ) ? $args[0] : false ;
+			$this->mMode = 'USAGER';
+			$this->mAnOption = isset( $args[0] ) ? $args[0] : false;
 		} elseif ( isset( $opts['old'] ) && isset( $opts['new'] ) ) {
-			$this->mMode = 'CHANGER' ;
-			$this->mOldValue = $opts['old'] ;
-			$this->mNewValue = $opts['new'] ;
+			$this->mMode = 'CHANGER';
+			$this->mOldValue = $opts['old'];
+			$this->mNewValue = $opts['new'];
 			$this->mAnOption = $args[0];
 		} else {
 			die( "There is a bug in the software, this should never happen\n" );
@@ -108,7 +111,8 @@ class userOptions {
 			return false;
 		}
 
-		$this->{ $this->mMode } ( );
+		$this->{$this->mMode}();
+
 		return true;
 	}
 
@@ -117,7 +121,7 @@ class userOptions {
 	#
 
 	/** List default options and their value */
-	private function LISTER( ) {
+	private function LISTER() {
 		$def = User::getDefaultOptions();
 		ksort( $def );
 		$maxOpt = 0;
@@ -130,7 +134,7 @@ class userOptions {
 	}
 
 	/** List options usage */
-	private function USAGER( ) {
+	private function USAGER() {
 		$ret = array();
 		$defaultOptions = User::getDefaultOptions();
 
@@ -140,7 +144,7 @@ class userOptions {
 			array( 'user_id' ),
 			array(),
 			__METHOD__
-			);
+		);
 
 		foreach ( $result as $id ) {
 
@@ -156,15 +160,18 @@ class userOptions {
 
 				$userValue = $user->getOption( $this->mAnOption );
 				if ( $userValue <> $defaultOptions[$this->mAnOption] ) {
+					// @codingStandardsIgnoreStart Ignore silencing errors is discouraged warning
 					@$ret[$this->mAnOption][$userValue]++;
+					// @codingStandardsIgnoreEnd
 				}
-
 			} else {
 
 				foreach ( $defaultOptions as $name => $defaultValue ) {
 					$userValue = $user->getOption( $name );
 					if ( $userValue <> $defaultValue ) {
+						// @codingStandardsIgnoreStart Ignore silencing errors is discouraged warning
 						@$ret[$name][$userValue]++;
+						// @codingStandardsIgnoreEnd
 					}
 				}
 			}
@@ -179,9 +186,8 @@ class userOptions {
 		}
 	}
 
-
 	/** Change our users options */
-	private function CHANGER( ) {
+	private function CHANGER() {
 		$this->warn();
 
 		// We list user by user_id from one of the slave database
@@ -190,7 +196,7 @@ class userOptions {
 			array( 'user_id' ),
 			array(),
 			__METHOD__
-			);
+		);
 
 		foreach ( $result as $id ) {
 
@@ -202,7 +208,8 @@ class userOptions {
 			if ( $curValue == $this->mOldValue ) {
 
 				if ( !$this->mQuiet ) {
-					print "Setting {$this->mAnOption} for $username from '{$this->mOldValue}' to '{$this->mNewValue}'): ";
+					print "Setting {$this->mAnOption} for $username from '{$this->mOldValue}' " .
+						"to '{$this->mNewValue}'): ";
 				}
 
 				// Change value
@@ -212,8 +219,9 @@ class userOptions {
 				if ( !$this->mDry ) {
 					$user->saveSettings();
 				}
-				if ( !$this->mQuiet ) { print " OK\n"; }
-
+				if ( !$this->mQuiet ) {
+					print " OK\n";
+				}
 			} elseif ( !$this->mQuiet ) {
 				print "Not changing '$username' using <{$this->mAnOption}> = '$curValue'\n";
 			}
@@ -230,6 +238,7 @@ class userOptions {
 		foreach ( $def as $optname => $defaultValue ) {
 			array_push( $ret, $optname );
 		}
+
 		return $ret;
 	}
 
@@ -238,7 +247,7 @@ class userOptions {
 	#
 
 	public static function showUsageAndExit() {
-print <<<USAGE
+		print <<<USAGE
 
 This script pass through all users and change one of their options.
 The new option is NOT validated.
@@ -262,7 +271,7 @@ Options:
 	--dry   : do not save user settings back to database
 
 USAGE;
-	exit( 0 );
+		exit( 0 );
 	}
 
 	/**
@@ -275,14 +284,14 @@ USAGE;
 			return true;
 		}
 
-print <<<WARN
+		print <<<WARN
 The script is about to change the skin for ALL USERS in the database.
 Users with option <$this->mAnOption> = '$this->mOldValue' will be made to use '$this->mNewValue'.
 
 Abort with control-c in the next five seconds....
 WARN;
 		wfCountDown( 5 );
+
 		return true;
 	}
-
 }

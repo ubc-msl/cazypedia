@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Harald Khan",
+			"Njardarlogar"
+		]
+	},
+	"multiboilerplate-desc": "Syner ein boks på toppen av endringssida for å velja og lasta ein standardtekst",
+	"multiboilerplate-legend": "Vel standardtekst",
+	"multiboilerplate-submit": "Last"
+}

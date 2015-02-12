@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"SPQRobin",
+			"Siebrand"
+		]
+	},
+	"multiboilerplate-desc": "Biedt de mogelijkheid een standaard tekstblok te selecteren uit een selectievenster bovenaan een bewerkingspagina",
+	"multiboilerplate-legend": "Sjabloon selecteren",
+	"multiboilerplate-submit": "Laden",
+	"boilerplates": "Beschikbare sjablonen",
+	"multiboilerplate-special-pagetext": "Deze sjablonen kunnen bij het aanmaken van een pagina worden voorgeladen.\n(<span class=plainlinks>[{{fullurl:Deze pagina bestaat niet|action=edit}} demonstratie]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Sjablonen worden ingesteld in LocalSettings.php.",
+	"multiboilerplate-special-define-in-interface": "Sjablonen worden ingesteld in [[MediaWiki:Multiboilerplate]]."
+}

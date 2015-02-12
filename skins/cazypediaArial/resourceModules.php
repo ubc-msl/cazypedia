@@ -7,11 +7,11 @@
 global $wgResourceModules, $wgStylePath, $wgStyleDirectory;
 
 $wgResourceModules['skins.cazypediaArial'] = array(
-   'styles' => array( 	'common/commonElements.css' => array( 'media' => 'screen'),
-						'common/commonContent.css' => array( 'media' => 'screen'),
-						'common/commonInterface.css' => array( 'media' => 'screen'),
-						'cazypediaArial/screen.css' => array( 'media' => 'screen')  ),
-   'scripts' => array('cazypediaArial/cazypediaArial.js', 'cazypediaArial/tooltipConfig.js'),
+   'styles' => array( 	'Common/commonElements.css' => array( 'media' => 'screen'),
+						'Common/commonContent.css' => array( 'media' => 'screen'),
+						'Common/commonInterface.css' => array( 'media' => 'screen'),
+						'CazypediaArial/screen.css' => array( 'media' => 'screen')  ),
+   'scripts' => array('CazypediaArial/CazypediaArial.js', 'CazypediaArial/tooltipConfig.js'),
    'remoteBasePath' => $wgStylePath,
    'localBasePath' => $wgStyleDirectory,
 );

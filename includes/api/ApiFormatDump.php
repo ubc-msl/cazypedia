@@ -26,13 +26,10 @@
 
 /**
  * API PHP's var_dump() output formatter
+ * @deprecated since 1.24
  * @ingroup API
  */
 class ApiFormatDump extends ApiFormatBase {
-
-	public function __construct( $main, $format ) {
-		parent::__construct( $main, $format );
-	}
 
 	public function getMimeType() {
 		// This looks like it should be text/plain, but IE7 is so
@@ -42,6 +39,7 @@ class ApiFormatDump extends ApiFormatBase {
 	}
 
 	public function execute() {
+		$this->markDeprecated();
 		ob_start();
 		var_dump( $this->getResultData() );
 		$result = ob_get_contents();
@@ -50,10 +48,6 @@ class ApiFormatDump extends ApiFormatBase {
 	}
 
 	public function getDescription() {
-		return 'Output data in PHP\'s var_dump() format' . parent::getDescription();
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id$';
+		return 'DEPRECATED! Output data in PHP\'s var_dump() format' . parent::getDescription();
 	}
 }

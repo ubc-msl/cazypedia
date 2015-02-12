@@ -23,34 +23,33 @@
  * @author Timo Tijhof
  */
 
+/**
+ * Handle page protection
+ *
+ * This is a wrapper that will call Article::protect().
+ *
+ * @ingroup Actions
+ */
 class ProtectAction extends FormlessAction {
 
 	public function getName() {
 		return 'protect';
 	}
 
-	public function onView(){
+	public function onView() {
 		return null;
 	}
 
-	public function show(){
+	public function show() {
+		if ( $this->getContext()->getConfig()->get( 'UseMediaWikiUIEverywhere' ) ) {
+			$out = $this->getOutput();
+			$out->addModuleStyles( array(
+				'mediawiki.ui.input',
+				'mediawiki.ui.checkbox',
+			) );
+		}
 
 		$this->page->protect();
-
 	}
-
 }
 
-class UnprotectAction extends ProtectAction {
-
-	public function getName() {
-		return 'unprotect';
-	}
-
-	public function show(){
-
-		$this->page->unprotect();
-
-	}
-
-}

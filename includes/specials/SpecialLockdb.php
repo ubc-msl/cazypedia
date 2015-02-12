@@ -27,7 +27,7 @@
  * @ingroup SpecialPage
  */
 class SpecialLockdb extends FormSpecialPage {
-	var $reason = '';
+	protected $reason = '';
 
 	public function __construct() {
 		parent::__construct( 'Lockdb', 'siteadmin' );
@@ -38,11 +38,9 @@ class SpecialLockdb extends FormSpecialPage {
 	}
 
 	public function checkExecutePermissions( User $user ) {
-		global $wgReadOnlyFile;
-
 		parent::checkExecutePermissions( $user );
 		# If the lock file isn't writable, we can do sweet bugger all
-		if ( !is_writable( dirname( $wgReadOnlyFile ) ) ) {
+		if ( !is_writable( dirname( $this->getConfig()->get( 'ReadOnlyFile' ) ) ) ) {
 			throw new ErrorPageError( 'lockdb', 'lockfilenotwritable' );
 		}
 	}
@@ -69,14 +67,14 @@ class SpecialLockdb extends FormSpecialPage {
 	}
 
 	public function onSubmit( array $data ) {
-		global $wgContLang, $wgReadOnlyFile;
+		global $wgContLang;
 
 		if ( !$data['Confirm'] ) {
 			return Status::newFatal( 'locknoconfirm' );
 		}
 
 		wfSuppressWarnings();
-		$fp = fopen( $wgReadOnlyFile, 'w' );
+		$fp = fopen( $this->getConfig()->get( 'ReadOnlyFile' ), 'w' );
 		wfRestoreWarnings();
 
 		if ( false === $fp ) {
@@ -87,13 +85,11 @@ class SpecialLockdb extends FormSpecialPage {
 		}
 		fwrite( $fp, $data['Reason'] );
 		$timestamp = wfTimestampNow();
-		fwrite( $fp, "\n<p>" . wfMsgExt(
-			'lockedbyandtime',
-			array( 'content', 'parsemag' ),
+		fwrite( $fp, "\n<p>" . $this->msg( 'lockedbyandtime',
 			$this->getUser()->getName(),
-			$wgContLang->date( $timestamp ),
-			$wgContLang->time( $timestamp )
-		) . "</p>\n" );
+			$wgContLang->date( $timestamp, false, false ),
+			$wgContLang->time( $timestamp, false, false )
+		)->inContentLanguage()->text() . "</p>\n" );
 		fclose( $fp );
 
 		return Status::newGood();
@@ -103,5 +99,9 @@ class SpecialLockdb extends FormSpecialPage {
 		$out = $this->getOutput();
 		$out->addSubtitle( $this->msg( 'lockdbsuccesssub' ) );
 		$out->addWikiMsg( 'lockdbsuccesstext' );
+	}
+
+	protected function getGroupName() {
+		return 'wiki';
 	}
 }

@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Michaello",
+			"Rancher",
+			"Жељко Тодоровић"
+		]
+	},
+	"contactpage-desc": "[[Special:Contact|Kontakt-forma za posetioce]]",
+	"contactpage-title": "Kontakt",
+	"contactpage-pagetext": "Molimo Vas da koristite formu ispod da nas kontaktirate.",
+	"contactpage-legend": "Pošalji e-poruku",
+	"contactpage-subject-and-sender": "$1 (od $2)",
+	"contactpage-fromname": "Vaše ime: *",
+	"contactpage-fromaddress": "Vaš mejl: **",
+	"contactpage-formfootnotes": "* neobavezno<br />\n** neobavezno, ali potrebno ako želite da dobijete odgovor",
+	"contactpage-usermailererror": "Došlo je do greške pri slanju poruke:"
+}

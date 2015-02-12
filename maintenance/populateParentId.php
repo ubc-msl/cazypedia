@@ -19,11 +19,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  *
+ * @file
  * @ingroup Maintenance
  */
 
-require_once( dirname( __FILE__ ) . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
+/**
+ * Maintenance script that makes the required database updates for rev_parent_id
+ * to be of any use.
+ *
+ * @ingroup Maintenance
+ */
 class PopulateParentId extends LoggedUpdateMaintenance {
 	public function __construct() {
 		parent::__construct();
@@ -42,6 +49,7 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 		$db = wfGetDB( DB_MASTER );
 		if ( !$db->tableExists( 'revision' ) ) {
 			$this->error( "revision table does not exist" );
+
 			return false;
 		}
 		$this->output( "Populating rev_parent_id column\n" );
@@ -49,6 +57,7 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 		$end = $db->selectField( 'revision', 'MAX(rev_id)', false, __FUNCTION__ );
 		if ( is_null( $start ) || is_null( $end ) ) {
 			$this->output( "...revision table seems to be empty, nothing to do.\n" );
+
 			return true;
 		}
 		# Do remaining chunk
@@ -61,7 +70,7 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 			$cond = "rev_id BETWEEN $blockStart AND $blockEnd";
 			$res = $db->select( 'revision',
 				array( 'rev_id', 'rev_page', 'rev_timestamp', 'rev_parent_id' ),
-				$cond, __METHOD__ );
+				array( $cond, 'rev_parent_id' => null ), __METHOD__ );
 			# Go through and update rev_parent_id from these rows.
 			# Assume that the previous revision of the title was
 			# the original previous revision of the title when the
@@ -78,10 +87,16 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 				# If there are none, check the the highest ID with a lower timestamp
 				if ( !$previousID ) {
 					# Get the highest older timestamp
-					$lastTimestamp = $db->selectField( 'revision', 'rev_timestamp',
-						array( 'rev_page' => $row->rev_page, "rev_timestamp < " . $db->addQuotes( $row->rev_timestamp ) ),
+					$lastTimestamp = $db->selectField(
+						'revision',
+						'rev_timestamp',
+						array(
+							'rev_page' => $row->rev_page,
+							"rev_timestamp < " . $db->addQuotes( $row->rev_timestamp )
+						),
 						__METHOD__,
-						array( 'ORDER BY' => 'rev_timestamp DESC' ) );
+						array( 'ORDER BY' => 'rev_timestamp DESC' )
+					);
 					# If there is one, let the highest rev ID win
 					if ( $lastTimestamp ) {
 						$previousID = $db->selectField( 'revision', 'rev_id',
@@ -91,8 +106,9 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 					}
 				}
 				$previousID = intval( $previousID );
-				if ( $previousID != $row->rev_parent_id )
+				if ( $previousID != $row->rev_parent_id ) {
 					$changed++;
+				}
 				# Update the row...
 				$db->update( 'revision',
 					array( 'rev_parent_id' => $previousID ),
@@ -105,9 +121,10 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 			wfWaitForSlaves();
 		}
 		$this->output( "rev_parent_id population complete ... {$count} rows [{$changed} changed]\n" );
+
 		return true;
 	}
 }
 
 $maintClass = "PopulateParentId";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

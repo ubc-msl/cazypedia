@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Als-Holder"
+		]
+	},
+	"multiboilerplate-desc": "Macht s megli e Täxtvorlag us em Uuswahlchaschte iber em Bearbeitigsformular uuszwehle derwylscht d Syte bearbeitet wird",
+	"multiboilerplate-legend": "Täxtvorlag uuswehle",
+	"multiboilerplate-submit": "Lade",
+	"boilerplates": "Verfiegbari Textböustei",
+	"multiboilerplate-special-pagetext": "Die Vorlage chenne vor s Syte aalege vorgschalte wäre. (<span class=plainlinks>[{{fullurl:Die Syte git s nit|action=edit}} demo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Textböustei wäre in LocalSettings.php definiert.",
+	"multiboilerplate-special-define-in-interface": "Textböustei wäre definiert in [[MediaWiki:Multiboilerplate]]."
+}

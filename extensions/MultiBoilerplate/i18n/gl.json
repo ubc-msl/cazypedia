@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"multiboilerplate-desc": "Permite que unha páxina a engadir sexa seleccionada dunha caixa despregable localizada enriba do formulario de edición ao editar páxinas",
+	"multiboilerplate-legend": "Seleccionar a páxina a engadir",
+	"multiboilerplate-submit": "Cargar",
+	"boilerplates": "Boilerplates dispoñibles",
+	"multiboilerplate-special-pagetext": "Estes modelos pódense precargar durante a creación da páxina. (<span class=plainlinks>[{{fullurl:Esta páxina non existe|action=edit}} demostración]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Os boilerplates están definidos en LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Os boilerplates están definidos en [[MediaWiki:Multiboilerplate]]."
+}

@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Michawiki"
+		]
+	},
+	"multiboilerplate-desc": "Zmóžnja wubraśe tekstowego elementa z wuběrańskego kašćika nad wobźěłowańskim pólom, mjaztym až boki se wobźěłuju",
+	"multiboilerplate-legend": "Tekstowy element wubraś",
+	"multiboilerplate-submit": "Zacytaś",
+	"boilerplates": "K dispoziciji stojece tekstowe elementy",
+	"multiboilerplate-special-pagetext": "Toś te pśedłogi daju se pśi napóranju boka awtomatiski zacytaś. (<span class=plainlinks>[{{fullurl:This page does not exist|action=edit}} demo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Tekstowe elementy definěruju se w LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Tekstowe elementy definěruju se w [[MediaWiki:Multiboilerplate]]."
+}

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"PhiLiP",
+			"Zoglun"
+		]
+	},
+	"multiboilerplate-desc": "这个插件可以在一个下拉菜单中选择需要预加载的页面",
+	"multiboilerplate-legend": "选择页面格式模板",
+	"multiboilerplate-submit": "插入页面",
+	"boilerplates": "预加载格式模板（boilerplates）",
+	"multiboilerplate-special-pagetext": "这些模板可以在页面创建时预加载入编辑框 (<span class=plainlinks>[{{fullurl:不存在的页面|action=edit}} 测试例子]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "在LocalSettings中设置预加载页面",
+	"multiboilerplate-special-define-in-interface": "预加载页面（Boilerplates）也可在 [[MediaWiki:Multiboilerplate]] 中设置"
+}

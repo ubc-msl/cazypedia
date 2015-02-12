@@ -1,5 +1,7 @@
 <?php
 /**
+ * Resource loader module for user preference customizations.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -31,30 +33,41 @@ class ResourceLoaderUserOptionsModule extends ResourceLoaderModule {
 
 	protected $origin = self::ORIGIN_CORE_INDIVIDUAL;
 
+	protected $targets = array( 'desktop', 'mobile' );
+
 	/* Methods */
 
 	/**
-	 * @param $context ResourceLoaderContext
-	 * @return array|int|Mixed
+	 * @param ResourceLoaderContext $context
+	 * @return array|int|mixed
 	 */
 	public function getModifiedTime( ResourceLoaderContext $context ) {
 		$hash = $context->getHash();
-		if ( isset( $this->modifiedTime[$hash] ) ) {
-			return $this->modifiedTime[$hash];
+		if ( !isset( $this->modifiedTime[$hash] ) ) {
+			global $wgUser;
+			$this->modifiedTime[$hash] = wfTimestamp( TS_UNIX, $wgUser->getTouched() );
 		}
-		
-		global $wgUser;
-		return $this->modifiedTime[$hash] = wfTimestamp( TS_UNIX, $wgUser->getTouched() );
+
+		return $this->modifiedTime[$hash];
 	}
 
 	/**
-	 * @param $context ResourceLoaderContext
+	 * @param ResourceLoaderContext $context
 	 * @return string
 	 */
 	public function getScript( ResourceLoaderContext $context ) {
 		global $wgUser;
 		return Xml::encodeJsCall( 'mw.user.options.set',
-			array( $wgUser->getOptions() ) );
+			array( $wgUser->getOptions() ),
+			ResourceLoader::inDebugMode()
+		);
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function supportsURLLoading() {
+		return false;
 	}
 
 	/**

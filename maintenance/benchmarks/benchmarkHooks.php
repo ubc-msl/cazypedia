@@ -1,5 +1,7 @@
 <?php
 /**
+ * Benchmark %MediaWiki hooks.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -19,10 +21,14 @@
  * @ingroup Benchmark
  */
 
-require_once( dirname( __FILE__ ) . '/Benchmarker.php' );
+require_once __DIR__ . '/Benchmarker.php';
 
+/**
+ * Maintenance script that benchmarks %MediaWiki hooks.
+ *
+ * @ingroup Benchmark
+ */
 class BenchmarkHooks extends Benchmarker {
-
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = 'Benchmark MediaWiki Hooks.';
@@ -39,13 +45,13 @@ class BenchmarkHooks extends Benchmarker {
 		$time = $this->benchHooks();
 		$this->output( 'Loaded (one) hook: ' . $time . "\n" );
 
-		for( $i = 0; $i < 9; $i++ ) {
+		for ( $i = 0; $i < 9; $i++ ) {
 			$wgHooks['Test'][] = array( $this, 'test' );
 		}
 		$time = $this->benchHooks();
 		$this->output( 'Loaded (ten) hook: ' . $time . "\n" );
 
-		for( $i = 0; $i < 90; $i++ ) {
+		for ( $i = 0; $i < 90; $i++ ) {
 			$wgHooks['Test'][] = array( $this, 'test' );
 		}
 		$time = $this->benchHooks();
@@ -54,18 +60,19 @@ class BenchmarkHooks extends Benchmarker {
 	}
 
 	/**
-	 * @param $trials int
+	 * @param int $trials
 	 * @return string
 	 */
 	private function benchHooks( $trials = 10 ) {
-		$start = wfTime();
+		$start = microtime( true );
 		for ( $i = 0; $i < $trials; $i++ ) {
 			wfRunHooks( 'Test' );
 		}
-		$delta = wfTime() - $start;
+		$delta = microtime( true ) - $start;
 		$pertrial = $delta / $trials;
-		return sprintf( "Took %6.2fs",
-			$pertrial );
+
+		return sprintf( "Took %6.3fms",
+			$pertrial * 1000 );
 	}
 
 	/**
@@ -77,4 +84,4 @@ class BenchmarkHooks extends Benchmarker {
 }
 
 $maintClass = 'BenchmarkHooks';
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

@@ -23,20 +23,31 @@
  * @author Timo Tijhof
  */
 
+/**
+ * Handle page deletion
+ *
+ * This is a wrapper that will call Article::delete().
+ *
+ * @ingroup Actions
+ */
 class DeleteAction extends FormlessAction {
 
 	public function getName() {
 		return 'delete';
 	}
 
-	public function onView(){
+	public function onView() {
 		return null;
 	}
 
-	public function show(){
-
+	public function show() {
+		if ( $this->getContext()->getConfig()->get( 'UseMediaWikiUIEverywhere' ) ) {
+			$out = $this->getOutput();
+			$out->addModuleStyles( array(
+				'mediawiki.ui.input',
+				'mediawiki.ui.checkbox',
+			) );
+		}
 		$this->page->delete();
-
 	}
-
 }

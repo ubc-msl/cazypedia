@@ -1,6 +1,6 @@
 <?php
 /**
- * action=edit / action=submit handler
+ * action=edit handler
  *
  * Copyright © 2012 Timo Tijhof
  *
@@ -23,52 +23,37 @@
  * @author Timo Tijhof
  */
 
+/**
+ * Page edition handler
+ *
+ * This is a wrapper that will call the EditPage class or a custom editor from an extension.
+ *
+ * @ingroup Actions
+ */
 class EditAction extends FormlessAction {
 
 	public function getName() {
 		return 'edit';
 	}
 
-	public function onView(){
+	public function onView() {
 		return null;
 	}
 
-	public function show(){
+	public function show() {
+		if ( $this->getContext()->getConfig()->get( 'UseMediaWikiUIEverywhere' ) ) {
+			$out = $this->getOutput();
+			$out->addModuleStyles( array(
+				'mediawiki.ui.input',
+				'mediawiki.ui.checkbox',
+			) );
+		}
 		$page = $this->page;
-		$request = $this->getRequest();
 		$user = $this->getUser();
-		$context = $this->getContext();
 
 		if ( wfRunHooks( 'CustomEditor', array( $page, $user ) ) ) {
-			if ( ExternalEdit::useExternalEngine( $context, 'edit' )
-				&& $this->getName() == 'edit' && !$request->getVal( 'section' )
-				&& !$request->getVal( 'oldid' ) )
-			{
-				$extedit = new ExternalEdit( $context );
-				$extedit->execute();
-			} else {
-				$editor = new EditPage( $page );
-				$editor->edit();
-			}
+			$editor = new EditPage( $page );
+			$editor->edit();
 		}
-
 	}
-
-}
-
-class SubmitAction extends EditAction {
-
-	public function getName() {
-		return 'submit';
-	}
-
-	public function show(){
-		if ( session_id() == '' ) {
-			// Send a cookie so anons get talk message notifications
-			wfSetupSession();
-		}
-
-		parent::show();
-	}
-
 }

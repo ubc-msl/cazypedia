@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"EugeneZelenko",
+			"Jim-by"
+		]
+	},
+	"multiboilerplate-desc": "Дазваляе ўдзельнікам выбіраць тыповыя тэксты са сьпісу над полем рэдагаваньня",
+	"multiboilerplate-legend": "Выбар узору",
+	"multiboilerplate-submit": "Загрузіць",
+	"boilerplates": "Даступныя шаблёны старонак",
+	"multiboilerplate-special-pagetext": "Гэтыя шаблёны могуць быць загружаныя пры стварэньні старонкі. (<span class=plainlinks>[{{fullurl:Гэтая старонка не існуе|action=edit}} дэманстрацыя]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Шаблёны старонак вызначаныя ў LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Шаблёны старонак вызначаныя ў [[MediaWiki:Multiboilerplate]]."
+}

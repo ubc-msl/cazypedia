@@ -5,7 +5,7 @@
  *
  * Created on Mar 24, 2009
  *
- * Copyright © 2009 Roan Kattouw <Firstname>.<Lastname>@gmail.com
+ * Copyright © 2009 Roan Kattouw "<Firstname>.<Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,23 +30,21 @@
  */
 class ApiUserrights extends ApiBase {
 
-	public function __construct( $main, $action ) {
-		parent::__construct( $main, $action );
-	}
-
 	private $mUser = null;
 
 	public function execute() {
 		$params = $this->extractRequestParams();
 
-		$user = $this->getUrUser();
+		$user = $this->getUrUser( $params );
 
 		$form = new UserrightsPage;
+		$form->setContext( $this->getContext() );
 		$r['user'] = $user->getName();
-		list( $r['added'], $r['removed'] ) =
-			$form->doSaveUserGroups(
-				$user, (array)$params['add'],
-				(array)$params['remove'], $params['reason'] );
+		$r['userid'] = $user->getId();
+		list( $r['added'], $r['removed'] ) = $form->doSaveUserGroups(
+			$user, (array)$params['add'],
+			(array)$params['remove'], $params['reason']
+		);
 
 		$result = $this->getResult();
 		$result->setIndexedTagName( $r['added'], 'group' );
@@ -55,26 +53,28 @@ class ApiUserrights extends ApiBase {
 	}
 
 	/**
+	 * @param array $params
 	 * @return User
 	 */
-	private function getUrUser() {
+	private function getUrUser( array $params ) {
 		if ( $this->mUser !== null ) {
 			return $this->mUser;
 		}
 
-		$params = $this->extractRequestParams();
+		$this->requireOnlyOneParameter( $params, 'user', 'userid' );
+
+		$user = isset( $params['user'] ) ? $params['user'] : '#' . $params['userid'];
 
 		$form = new UserrightsPage;
-		$status = $form->fetchUser( $params['user'] );
+		$form->setContext( $this->getContext() );
+		$status = $form->fetchUser( $user );
 		if ( !$status->isOK() ) {
-			$errors = $status->getErrorsArray();
-			$this->dieUsageMsg( $errors[0] );
-		} else {
-			$user = $status->value;
+			$this->dieStatus( $status );
 		}
 
-		$this->mUser = $user;
-		return $user;
+		$this->mUser = $status->value;
+
+		return $status->value;
 	}
 
 	public function mustBePosted() {
@@ -86,10 +86,12 @@ class ApiUserrights extends ApiBase {
 	}
 
 	public function getAllowedParams() {
-		return array (
+		return array(
 			'user' => array(
 				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => true
+			),
+			'userid' => array(
+				ApiBase::PARAM_TYPE => 'integer',
 			),
 			'add' => array(
 				ApiBase::PARAM_TYPE => User::getAllGroups(),
@@ -99,7 +101,6 @@ class ApiUserrights extends ApiBase {
 				ApiBase::PARAM_TYPE => User::getAllGroups(),
 				ApiBase::PARAM_ISMULTI => true
 			),
-			'token' => null,
 			'reason' => array(
 				ApiBase::PARAM_DFLT => ''
 			)
@@ -109,36 +110,37 @@ class ApiUserrights extends ApiBase {
 	public function getParamDescription() {
 		return array(
 			'user' => 'User name',
+			'userid' => 'User id',
 			'add' => 'Add the user to these groups',
 			'remove' => 'Remove the user from these groups',
-			'token' => 'A userrights token previously retrieved through list=users',
+			'token' => array(
+				/* Standard description automatically prepended */
+				'For compatibility, the token used in the web UI is also accepted.'
+			),
 			'reason' => 'Reason for the change',
 		);
 	}
 
 	public function getDescription() {
-		return 'Add/remove a user to/from groups';
+		return 'Add/remove a user to/from groups.';
 	}
 
 	public function needsToken() {
-		return true;
+		return 'userrights';
 	}
 
-	public function getTokenSalt() {
-		return $this->getUrUser()->getName();
+	protected function getWebUITokenSalt( array $params ) {
+		return $this->getUrUser( $params )->getName();
 	}
 
 	public function getExamples() {
 		return array(
-			'api.php?action=userrights&user=FooBot&add=bot&remove=sysop|bureaucrat&token=123ABC'
+			'api.php?action=userrights&user=FooBot&add=bot&remove=sysop|bureaucrat&token=123ABC',
+			'api.php?action=userrights&userid=123&add=bot&remove=sysop|bureaucrat&token=123ABC'
 		);
 	}
 
 	public function getHelpUrls() {
 		return 'https://www.mediawiki.org/wiki/API:User_group_membership';
-	}
-
-	public function getVersion() {
-		return __CLASS__ . ': $Id$';
 	}
 }

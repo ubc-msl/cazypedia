@@ -1,19 +1,44 @@
 <?php
 /**
+ * Holders of revision list for a single page
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
+ */
+
+/**
  * List for revision table items for a single page
  */
 abstract class RevisionListBase extends ContextSource {
-	/**
-	 * @var Title
-	 */
-	var $title;
+	/** @var Title */
+	public $title;
 
-	var $ids, $res, $current;
+	/** @var array */
+	protected $ids;
+
+	protected $res;
+
+	/** @var bool|object */
+	protected $current;
 
 	/**
 	 * Construct a revision list for a given title
-	 * @param $context IContextSource
-	 * @param $title Title
+	 * @param IContextSource $context
+	 * @param Title $title
 	 */
 	function __construct( IContextSource $context, Title $title ) {
 		$this->setContext( $context );
@@ -22,7 +47,7 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Select items only where the ID is any of the specified values
-	 * @param $ids Array
+	 * @param array $ids
 	 */
 	function filterByIds( array $ids ) {
 		$this->ids = $ids;
@@ -31,6 +56,7 @@ abstract class RevisionListBase extends ContextSource {
 	/**
 	 * Get the internal type name of this list. Equal to the table name.
 	 * Override this function.
+	 * @return null
 	 */
 	public function getType() {
 		return null;
@@ -50,7 +76,7 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Start iteration. This must be called before current() or next().
-	 * @return First list item
+	 * @return Revision First list item
 	 */
 	public function reset() {
 		if ( !$this->res ) {
@@ -64,6 +90,7 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Get the current list item, or false if we are at the end
+	 * @return Revision
 	 */
 	public function current() {
 		return $this->current;
@@ -71,6 +98,7 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Move the iteration pointer to the next list item, and return it.
+	 * @return Revision
 	 */
 	public function next() {
 		$this->res->next();
@@ -80,9 +108,10 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Get the number of items in the list.
+	 * @return int
 	 */
 	public function length() {
-		if( !$this->res ) {
+		if ( !$this->res ) {
 			return 0;
 		} else {
 			return $this->res->numRows();
@@ -91,13 +120,13 @@ abstract class RevisionListBase extends ContextSource {
 
 	/**
 	 * Do the DB query to iterate through the objects.
-	 * @param $db DatabaseBase object to use for the query
+	 * @param DatabaseBase $db DatabaseBase object to use for the query
 	 */
 	abstract public function doQuery( $db );
 
 	/**
 	 * Create an item object from a DB result row
-	 * @param $row stdclass
+	 * @param object $row
 	 */
 	abstract public function newItem( $row );
 }
@@ -106,15 +135,15 @@ abstract class RevisionListBase extends ContextSource {
  * Abstract base class for revision items
  */
 abstract class RevisionItemBase {
-	/** The parent RevisionListBase */
-	var $list;
+	/** @var RevisionListBase The parent */
+	protected $list;
 
-	/** The DB result row */
-	var $row;
+	/** The database result row */
+	protected $row;
 
 	/**
-	 * @param $list RevisionListBase
-	 * @param $row DB result row
+	 * @param RevisionListBase $list
+	 * @param object $row DB result row
 	 */
 	public function __construct( $list, $row ) {
 		$this->list = $list;
@@ -124,6 +153,7 @@ abstract class RevisionItemBase {
 	/**
 	 * Get the DB field name associated with the ID list.
 	 * Override this function.
+	 * @return null
 	 */
 	public function getIdField() {
 		return null;
@@ -132,6 +162,7 @@ abstract class RevisionItemBase {
 	/**
 	 * Get the DB field name storing timestamps.
 	 * Override this function.
+	 * @return bool
 	 */
 	public function getTimestampField() {
 		return false;
@@ -140,6 +171,7 @@ abstract class RevisionItemBase {
 	/**
 	 * Get the DB field name storing user ids.
 	 * Override this function.
+	 * @return bool
 	 */
 	public function getAuthorIdField() {
 		return false;
@@ -148,6 +180,7 @@ abstract class RevisionItemBase {
 	/**
 	 * Get the DB field name storing user names.
 	 * Override this function.
+	 * @return bool
 	 */
 	public function getAuthorNameField() {
 		return false;
@@ -155,6 +188,7 @@ abstract class RevisionItemBase {
 
 	/**
 	 * Get the ID, as it would appear in the ids URL parameter
+	 * @return int
 	 */
 	public function getId() {
 		$field = $this->getIdField();
@@ -162,7 +196,8 @@ abstract class RevisionItemBase {
 	}
 
 	/**
-	 * Get the date, formatted in user's languae
+	 * Get the date, formatted in user's language
+	 * @return string
 	 */
 	public function formatDate() {
 		return $this->list->getLanguage()->userDate( $this->getTimestamp(),
@@ -170,7 +205,8 @@ abstract class RevisionItemBase {
 	}
 
 	/**
-	 * Get the time, formatted in user's languae
+	 * Get the time, formatted in user's language
+	 * @return string
 	 */
 	public function formatTime() {
 		return $this->list->getLanguage()->userTime( $this->getTimestamp(),
@@ -179,6 +215,7 @@ abstract class RevisionItemBase {
 
 	/**
 	 * Get the timestamp in MW 14-char form
+	 * @return mixed
 	 */
 	public function getTimestamp() {
 		$field = $this->getTimestampField();
@@ -187,6 +224,7 @@ abstract class RevisionItemBase {
 
 	/**
 	 * Get the author user ID
+	 * @return int
 	 */
 	public function getAuthorId() {
 		$field = $this->getAuthorIdField();
@@ -195,6 +233,7 @@ abstract class RevisionItemBase {
 
 	/**
 	 * Get the author user name
+	 * @return string
 	 */
 	public function getAuthorName() {
 		$field = $this->getAuthorNameField();
@@ -212,7 +251,7 @@ abstract class RevisionItemBase {
 	abstract public function canViewContent();
 
 	/**
-	 * Get the HTML of the list item. Should be include <li></li> tags.
+	 * Get the HTML of the list item. Should be include "<li></li>" tags.
 	 * This is used to show the list in HTML form, by the special page.
 	 */
 	abstract public function getHTML();
@@ -224,7 +263,7 @@ class RevisionList extends RevisionListBase {
 	}
 
 	/**
-	 * @param $db DatabaseBase
+	 * @param DatabaseBase $db
 	 * @return mixed
 	 */
 	public function doQuery( $db ) {
@@ -253,12 +292,16 @@ class RevisionList extends RevisionListBase {
  * Item class for a live revision table row
  */
 class RevisionItem extends RevisionItemBase {
-	var $revision, $context;
+	/** @var Revision */
+	protected $revision;
+
+	/** @var RequestContext */
+	protected $context;
 
 	public function __construct( $list, $row ) {
 		parent::__construct( $list, $row );
 		$this->revision = new Revision( $row );
-		$this->context = $list->context;
+		$this->context = $list->getContext();
 	}
 
 	public function getIdField() {
@@ -291,7 +334,8 @@ class RevisionItem extends RevisionItemBase {
 
 	/**
 	 * Get the HTML link to the revision text.
-	 * Overridden by RevDel_ArchiveItem.
+	 * Overridden by RevDelArchiveItem.
+	 * @return string
 	 */
 	protected function getRevisionLink() {
 		$date = $this->list->getLanguage()->timeanddate( $this->revision->getTimestamp(), true );
@@ -311,16 +355,16 @@ class RevisionItem extends RevisionItemBase {
 
 	/**
 	 * Get the HTML link to the diff.
-	 * Overridden by RevDel_ArchiveItem
+	 * Overridden by RevDelArchiveItem
+	 * @return string
 	 */
 	protected function getDiffLink() {
 		if ( $this->isDeleted() && !$this->canViewContent() ) {
-			return wfMsgHtml('diff');
+			return $this->context->msg( 'diff' )->escaped();
 		} else {
-			return
-				Linker::link(
+			return Linker::link(
 					$this->list->title,
-					wfMsgHtml('diff'),
+					$this->context->msg( 'diff' )->escaped(),
 					array(),
 					array(
 						'diff' => $this->revision->getId(),
@@ -336,13 +380,14 @@ class RevisionItem extends RevisionItemBase {
 	}
 
 	public function getHTML() {
-		$difflink = $this->getDiffLink();
+		$difflink = $this->context->msg( 'parentheses' )
+			->rawParams( $this->getDiffLink() )->escaped();
 		$revlink = $this->getRevisionLink();
 		$userlink = Linker::revUserLink( $this->revision );
 		$comment = Linker::revComment( $this->revision );
 		if ( $this->isDeleted() ) {
 			$revlink = "<span class=\"history-deleted\">$revlink</span>";
 		}
-		return "<li>($difflink) $revlink $userlink $comment</li>";
+		return "<li>$difflink $revlink $userlink $comment</li>";
 	}
 }

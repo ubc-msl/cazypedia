@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"MinuteElectron <minuteelectron@googlemail.com>"
+		]
+	},
+	"multiboilerplate": "",
+	"multiboilerplate-desc": "Allows a boilerplate to be selected from a drop down box located above the edit form when editing pages",
+	"multiboilerplate-label": "",
+	"multiboilerplate-legend": "Select boilerplate",
+	"multiboilerplate-submit": "Load",
+	"specialboilerplate-desc": "Special page to display all defined boilerplates",
+	"boilerplates": "Boilerplates",
+	"multiboilerplate-special-pagetext": "These templates can be preloaded on page creation. (<span class=plainlinks>[{{fullurl:This page does not exist|action=edit}} demo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Boilerplates are defined in LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Boilerplates are defined in [[MediaWiki:Multiboilerplate]]."
+}

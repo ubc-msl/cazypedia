@@ -18,11 +18,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  *
+ * @file
  * @ingroup Maintenance
  */
 
-require_once( dirname( __FILE__ ) . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
+/**
+ * Maintenance script that fills the rev_sha1 and ar_sha1 columns of revision
+ * and archive tables for revisions created before MW 1.19.
+ *
+ * @ingroup Maintenance
+ */
 class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 	public function __construct() {
 		parent::__construct();
@@ -41,6 +48,10 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 			$this->error( "revision table does not exist", true );
 		} elseif ( !$db->tableExists( 'archive' ) ) {
 			$this->error( "archive table does not exist", true );
+		} elseif ( !$db->fieldExists( 'revision', 'rev_sha1', __METHOD__ ) ) {
+			$this->output( "rev_sha1 column does not exist\n\n", true );
+
+			return false;
 		}
 
 		$this->output( "Populating rev_sha1 column\n" );
@@ -51,15 +62,17 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 		$this->output( "Populating ar_sha1 column legacy rows\n" );
 		$ac += $this->doSha1LegacyUpdates();
 
-		$this->output( "rev_sha1 and ar_sha1 population complete [$rc revision rows, $ac archive rows].\n" );
+		$this->output( "rev_sha1 and ar_sha1 population complete "
+			. "[$rc revision rows, $ac archive rows].\n" );
+
 		return true;
 	}
 
 	/**
-	 * @param $table string
-	 * @param $idCol
-	 * @param $prefix string
-	 * @return Integer Rows changed
+	 * @param string $table
+	 * @param string $idCol
+	 * @param string $prefix
+	 * @return int Rows changed
 	 */
 	protected function doSha1Updates( $table, $idCol, $prefix ) {
 		$db = $this->getDB( DB_MASTER );
@@ -67,6 +80,7 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 		$end = $db->selectField( $table, "MAX($idCol)", false, __METHOD__ );
 		if ( !$start || !$end ) {
 			$this->output( "...$table table seems to be empty.\n" );
+
 			return 0;
 		}
 
@@ -81,18 +95,19 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 				AND $idCol IS NOT NULL AND {$prefix}_sha1 = ''";
 			$res = $db->select( $table, '*', $cond, __METHOD__ );
 
-			$db->begin();
+			$db->begin( __METHOD__ );
 			foreach ( $res as $row ) {
 				if ( $this->upgradeRow( $row, $table, $idCol, $prefix ) ) {
 					$count++;
 				}
 			}
-			$db->commit();
+			$db->commit( __METHOD__ );
 
 			$blockStart += $this->mBatchSize;
 			$blockEnd += $this->mBatchSize;
 			wfWaitForSlaves();
 		}
+
 		return $count;
 	}
 
@@ -102,66 +117,81 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 	protected function doSha1LegacyUpdates() {
 		$count = 0;
 		$db = $this->getDB( DB_MASTER );
-		$res = $db->select( 'archive', '*', array( 'ar_rev_id IS NULL' ), __METHOD__ );
+		$res = $db->select( 'archive', '*',
+			array( 'ar_rev_id IS NULL', 'ar_sha1' => '' ), __METHOD__ );
 
 		$updateSize = 0;
-		$db->begin();
+		$db->begin( __METHOD__ );
 		foreach ( $res as $row ) {
 			if ( $this->upgradeLegacyArchiveRow( $row ) ) {
 				++$count;
 			}
 			if ( ++$updateSize >= 100 ) {
 				$updateSize = 0;
-				$db->commit();
+				$db->commit( __METHOD__ );
 				$this->output( "Commited row with ar_timestamp={$row->ar_timestamp}\n" );
 				wfWaitForSlaves();
-				$db->begin();
+				$db->begin( __METHOD__ );
 			}
 		}
-		$db->commit();
+		$db->commit( __METHOD__ );
+
 		return $count;
 	}
 
 	/**
-	 * @param $row
-	 * @param $table
-	 * @param $idCol
-	 * @param $prefix
+	 * @param stdClass $row
+	 * @param string $table
+	 * @param string $idCol
+	 * @param string $prefix
 	 * @return bool
 	 */
 	protected function upgradeRow( $row, $table, $idCol, $prefix ) {
 		$db = $this->getDB( DB_MASTER );
-		if ( $table === 'archive' ) {
-			$rev = Revision::newFromArchiveRow( $row );
-		} else {
-			$rev = new Revision( $row );
+		try {
+			$rev = ( $table === 'archive' )
+				? Revision::newFromArchiveRow( $row )
+				: new Revision( $row );
+			$text = $rev->getSerializedData();
+		} catch ( MWException $e ) {
+			$this->output( "Data of revision with {$idCol}={$row->$idCol} unavailable!\n" );
+
+			return false; // bug 22624?
 		}
-		$text = $rev->getRawText();
 		if ( !is_string( $text ) ) {
 			# This should not happen, but sometimes does (bug 20757)
-			$this->output( "Text of revision with {$idCol}={$row->$idCol} unavailable!\n" );
+			$this->output( "Data of revision with {$idCol}={$row->$idCol} unavailable!\n" );
+
 			return false;
 		} else {
 			$db->update( $table,
 				array( "{$prefix}_sha1" => Revision::base36Sha1( $text ) ),
 				array( $idCol => $row->$idCol ),
-				__METHOD__ 
+				__METHOD__
 			);
+
 			return true;
 		}
 	}
 
 	/**
-	 * @param $row
+	 * @param stdClass $row
 	 * @return bool
 	 */
 	protected function upgradeLegacyArchiveRow( $row ) {
 		$db = $this->getDB( DB_MASTER );
-		$rev = Revision::newFromArchiveRow( $row );
-		$text = $rev->getRawText();
+		try {
+			$rev = Revision::newFromArchiveRow( $row );
+		} catch ( MWException $e ) {
+			$this->output( "Text of revision with timestamp {$row->ar_timestamp} unavailable!\n" );
+
+			return false; // bug 22624?
+		}
+		$text = $rev->getSerializedData();
 		if ( !is_string( $text ) ) {
 			# This should not happen, but sometimes does (bug 20757)
-			$this->output( "Text of revision with timestamp {$row->ar_timestamp} unavailable!\n" );
+			$this->output( "Data of revision with timestamp {$row->ar_timestamp} unavailable!\n" );
+
 			return false;
 		} else {
 			# Archive table as no PK, but (NS,title,time) should be near unique.
@@ -170,16 +200,17 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 				array( 'ar_sha1' => Revision::base36Sha1( $text ) ),
 				array(
 					'ar_namespace' => $row->ar_namespace,
-					'ar_title'     => $row->ar_title,
+					'ar_title' => $row->ar_title,
 					'ar_timestamp' => $row->ar_timestamp,
-					'ar_len'       => $row->ar_len // extra sanity
+					'ar_len' => $row->ar_len // extra sanity
 				),
-				__METHOD__ 
+				__METHOD__
 			);
+
 			return true;
 		}
 	}
 }
 
 $maintClass = "PopulateRevisionSha1";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

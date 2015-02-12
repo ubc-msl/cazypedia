@@ -21,16 +21,20 @@
  * @ingroup Maintenance
  */
 
-require_once( dirname( __FILE__ ) . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
+// @codingStandardsIgnoreStart MediaWiki.NamingConventions.ValidGlobalName.wgPrefix
 global $optionsWithArgs;
+// @codingStandardsIgnoreEnd
 if ( !isset( $optionsWithArgs ) ) {
 	$optionsWithArgs = array();
 }
 
 class CommandLineInc extends Maintenance {
 	public function __construct() {
+		// @codingStandardsIgnoreStart MediaWiki.NamingConventions.ValidGlobalName.wgPrefix
 		global $optionsWithArgs;
+		// @codingStandardsIgnoreEnd
 		parent::__construct();
 		foreach ( $optionsWithArgs as $name ) {
 			$this->addOption( $name, '', false, true );
@@ -39,6 +43,7 @@ class CommandLineInc extends Maintenance {
 
 	/**
 	 * No help, it would just be misleading since it misses custom options
+	 * @param bool $force
 	 */
 	protected function maybeHelp( $force = false ) {
 		if ( !$force ) {
@@ -48,12 +53,14 @@ class CommandLineInc extends Maintenance {
 	}
 
 	public function execute() {
+		// @codingStandardsIgnoreStart MediaWiki.NamingConventions.ValidGlobalName.wgPrefix
 		global $args, $options;
+		// @codingStandardsIgnoreEnd
 		$args = $this->mArgs;
 		$options = $this->mOptions;
 	}
 }
 
 $maintClass = 'CommandLineInc';
-require( RUN_MAINTENANCE_IF_MAIN );
+require RUN_MAINTENANCE_IF_MAIN;
 

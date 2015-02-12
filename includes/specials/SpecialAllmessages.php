@@ -27,8 +27,7 @@
  * @file
  * @ingroup SpecialPage
  */
-class SpecialAllmessages extends SpecialPage {
-
+class SpecialAllMessages extends SpecialPage {
 	/**
 	 * @var AllmessagesTablePager
 	 */
@@ -44,7 +43,7 @@ class SpecialAllmessages extends SpecialPage {
 	/**
 	 * Show the special page
 	 *
-	 * @param $par Mixed: parameter passed to the page or null
+	 * @param string $par Parameter passed to the page or null
 	 */
 	public function execute( $par ) {
 		$request = $this->getRequest();
@@ -52,14 +51,13 @@ class SpecialAllmessages extends SpecialPage {
 
 		$this->setHeaders();
 
-		global $wgUseDatabaseMessages;
-		if( !$wgUseDatabaseMessages ) {
+		if ( !$this->getConfig()->get( 'UseDatabaseMessages' ) ) {
 			$out->addWikiMsg( 'allmessagesnotsupportedDB' );
+
 			return;
-		} else {
-			$this->outputHeader( 'allmessagestext' );
 		}
 
+		$this->outputHeader( 'allmessagestext' );
 		$out->addModuleStyles( 'mediawiki.special' );
 
 		$this->table = new AllmessagesTablePager(
@@ -70,21 +68,20 @@ class SpecialAllmessages extends SpecialPage {
 
 		$this->langcode = $this->table->lang->getCode();
 
-		$out->addHTML( $this->table->buildForm() .
-			$this->table->getNavigationBar() .
-			$this->table->getBody() .
-			$this->table->getNavigationBar() );
-
+		$out->addHTML( $this->table->buildForm() );
+		$out->addParserOutputContent( $this->table->getFullOutput() );
 	}
 
+	protected function getGroupName() {
+		return 'wiki';
+	}
 }
 
 /**
  * Use TablePager for prettified output. We have to pretend that we're
  * getting data from a table when in fact not all of it comes from the database.
  */
-class AllmessagesTablePager extends TablePager {
-
+class AllMessagesTablePager extends TablePager {
 	protected $filter, $prefix, $langcode, $displayPrefix;
 
 	public $mLimitsShown;
@@ -104,7 +101,8 @@ class AllmessagesTablePager extends TablePager {
 		$this->mIndexField = 'am_title';
 		$this->mPage = $page;
 		$this->mConds = $conds;
-		$this->mDefaultDirection = true; // always sort ascending
+		// FIXME: Why does this need to be set to DIR_DESCENDING to produce ascending ordering?
+		$this->mDefaultDirection = IndexPager::DIR_DESCENDING;
 		$this->mLimitsShown = array( 20, 50, 100, 250, 500, 5000 );
 
 		global $wgContLang;
@@ -113,20 +111,23 @@ class AllmessagesTablePager extends TablePager {
 
 		$this->lang = ( $langObj ? $langObj : $wgContLang );
 		$this->langcode = $this->lang->getCode();
-		$this->foreign  = $this->langcode != $wgContLang->getCode();
+		$this->foreign = $this->langcode !== $wgContLang->getCode();
 
 		$request = $this->getRequest();
 
 		$this->filter = $request->getVal( 'filter', 'all' );
-		if( $this->filter === 'all' ){
+		if ( $this->filter === 'all' ) {
 			$this->custom = null; // So won't match in either case
 		} else {
-			$this->custom = ($this->filter == 'unmodified');
+			$this->custom = ( $this->filter === 'unmodified' );
 		}
 
 		$prefix = $this->getLanguage()->ucfirst( $request->getVal( 'prefix', '' ) );
-		$prefix = $prefix != '' ? Title::makeTitleSafe( NS_MEDIAWIKI, $request->getVal( 'prefix', null ) ) : null;
-		if( $prefix !== null ){
+		$prefix = $prefix !== '' ?
+			Title::makeTitleSafe( NS_MEDIAWIKI, $request->getVal( 'prefix', null ) ) :
+			null;
+
+		if ( $prefix !== null ) {
 			$this->displayPrefix = $prefix->getDBkey();
 			$this->prefix = '/^' . preg_quote( $this->displayPrefix ) . '/i';
 		} else {
@@ -136,7 +137,7 @@ class AllmessagesTablePager extends TablePager {
 
 		// The suffix that may be needed for message names if we're in a
 		// different language (eg [[MediaWiki:Foo/fr]]: $suffix = '/fr'
-		if( $this->foreign ) {
+		if ( $this->foreign ) {
 			$this->suffix = '/' . $this->langcode;
 		} else {
 			$this->suffix = '';
@@ -144,88 +145,87 @@ class AllmessagesTablePager extends TablePager {
 	}
 
 	function buildForm() {
-		global $wgScript;
+		$attrs = array( 'id' => 'mw-allmessages-form-lang', 'name' => 'lang' );
+		$msg = wfMessage( 'allmessages-language' );
+		$langSelect = Xml::languageSelector( $this->langcode, false, null, $attrs, $msg );
 
-		$languages = Language::getLanguageNames( false );
-		ksort( $languages );
-
-		$out  = Xml::openElement( 'form', array( 'method' => 'get', 'action' => $wgScript, 'id' => 'mw-allmessages-form' ) ) .
+		$out = Xml::openElement( 'form', array(
+				'method' => 'get',
+				'action' => $this->getConfig()->get( 'Script' ),
+				'id' => 'mw-allmessages-form'
+			) ) .
 			Xml::fieldset( $this->msg( 'allmessages-filter-legend' )->text() ) .
 			Html::hidden( 'title', $this->getTitle()->getPrefixedText() ) .
 			Xml::openElement( 'table', array( 'class' => 'mw-allmessages-table' ) ) . "\n" .
 			'<tr>
 				<td class="mw-label">' .
-					Xml::label( $this->msg( 'allmessages-prefix' )->text(), 'mw-allmessages-form-prefix' ) .
-				"</td>\n
-				<td class=\"mw-input\">" .
-					Xml::input( 'prefix', 20, str_replace( '_', ' ', $this->displayPrefix ), array( 'id' => 'mw-allmessages-form-prefix' ) ) .
-				"</td>\n
+			Xml::label( $this->msg( 'allmessages-prefix' )->text(), 'mw-allmessages-form-prefix' ) .
+			"</td>\n
+			<td class=\"mw-input\">" .
+			Xml::input(
+				'prefix',
+				20,
+				str_replace( '_', ' ', $this->displayPrefix ),
+				array( 'id' => 'mw-allmessages-form-prefix' )
+			) .
+			"</td>\n
 			</tr>
 			<tr>\n
-				<td class='mw-label'>" .
-					$this->msg( 'allmessages-filter' )->escaped() .
-				"</td>\n
+			<td class='mw-label'>" .
+			$this->msg( 'allmessages-filter' )->escaped() .
+			"</td>\n
 				<td class='mw-input'>" .
-					Xml::radioLabel( $this->msg( 'allmessages-filter-unmodified' )->text(),
-						'filter',
-						'unmodified',
-						'mw-allmessages-form-filter-unmodified',
-						( $this->filter == 'unmodified' )
-					) .
-					Xml::radioLabel( $this->msg( 'allmessages-filter-all' )->text(),
-						'filter',
-						'all',
-						'mw-allmessages-form-filter-all',
-						( $this->filter == 'all' )
-					) .
-					Xml::radioLabel( $this->msg( 'allmessages-filter-modified' )->text(),
-						'filter',
-						'modified',
-						'mw-allmessages-form-filter-modified',
-					( $this->filter == 'modified' )
-				) .
-				"</td>\n
+			Xml::radioLabel( $this->msg( 'allmessages-filter-unmodified' )->text(),
+				'filter',
+				'unmodified',
+				'mw-allmessages-form-filter-unmodified',
+				( $this->filter === 'unmodified' )
+			) .
+			Xml::radioLabel( $this->msg( 'allmessages-filter-all' )->text(),
+				'filter',
+				'all',
+				'mw-allmessages-form-filter-all',
+				( $this->filter === 'all' )
+			) .
+			Xml::radioLabel( $this->msg( 'allmessages-filter-modified' )->text(),
+				'filter',
+				'modified',
+				'mw-allmessages-form-filter-modified',
+				( $this->filter === 'modified' )
+			) .
+			"</td>\n
 			</tr>
 			<tr>\n
-				<td class=\"mw-label\">" .
-					Xml::label( $this->msg( 'allmessages-language' )->text(), 'mw-allmessages-form-lang' ) .
-				"</td>\n
-				<td class=\"mw-input\">" .
-					Xml::openElement( 'select', array( 'id' => 'mw-allmessages-form-lang', 'name' => 'lang' ) );
-
-		foreach( $languages as $lang => $name ) {
-			$selected = $lang == $this->langcode;
-			$out .= Xml::option( $lang . ' - ' . $name, $lang, $selected ) . "\n";
-		}
-		$out .= Xml::closeElement( 'select' ) .
-				"</td>\n
+				<td class=\"mw-label\">" . $langSelect[0] . "</td>\n
+				<td class=\"mw-input\">" . $langSelect[1] . "</td>\n
 			</tr>" .
 
 			'<tr>
 				<td class="mw-label">' .
-					Xml::label( $this->msg( 'table_pager_limit_label' )->text(), 'mw-table_pager_limit_label' ) .
-				'</td>
-				<td class="mw-input">' .
-					$this->getLimitSelect() .
-				'</td>
+			Xml::label( $this->msg( 'table_pager_limit_label' )->text(), 'mw-table_pager_limit_label' ) .
+			'</td>
+			<td class="mw-input">' .
+			$this->getLimitSelect() .
+			'</td>
 			<tr>
 				<td></td>
 				<td>' .
-					Xml::submitButton( $this->msg( 'allmessages-filter-submit' )->text() ) .
-				"</td>\n
+			Xml::submitButton( $this->msg( 'allmessages-filter-submit' )->text() ) .
+			"</td>\n
 			</tr>" .
 
 			Xml::closeElement( 'table' ) .
 			$this->getHiddenFields( array( 'title', 'prefix', 'filter', 'lang', 'limit' ) ) .
 			Xml::closeElement( 'fieldset' ) .
 			Xml::closeElement( 'form' );
+
 		return $out;
 	}
 
 	function getAllMessages( $descending ) {
 		wfProfileIn( __METHOD__ );
 		$messageNames = Language::getLocalisationCache()->getSubitemList( 'en', 'messages' );
-		if( $descending ){
+		if ( $descending ) {
 			rsort( $messageNames );
 		} else {
 			asort( $messageNames );
@@ -235,6 +235,7 @@ class AllmessagesTablePager extends TablePager {
 		$messageNames = array_map( array( $this->lang, 'ucfirst' ), $messageNames );
 
 		wfProfileOut( __METHOD__ );
+
 		return $messageNames;
 	}
 
@@ -247,7 +248,7 @@ class AllmessagesTablePager extends TablePager {
 	 * @param array $messageNames
 	 * @param string $langcode What language code
 	 * @param bool $foreign Whether the $langcode is not the content language
-	 * @return array: a 'pages' and 'talks' array with the keys of existing pages
+	 * @return array A 'pages' and 'talks' array with the keys of existing pages
 	 */
 	public static function getCustomisedStatuses( $messageNames, $langcode = 'en', $foreign = false ) {
 		// FIXME: This function should be moved to Language:: or something.
@@ -266,18 +267,23 @@ class AllmessagesTablePager extends TablePager {
 
 		foreach ( $res as $s ) {
 			$exists = false;
-			if( $foreign ) {
-				$title = explode( '/', $s->page_title );
-				if( count( $title ) === 2 && $langcode == $title[1]
-					&& isset( $xNames[$title[0]] ) ) {
-					$exists = $title[0];
+
+			if ( $foreign ) {
+				$titleParts = explode( '/', $s->page_title );
+				if ( count( $titleParts ) === 2 &&
+					$langcode === $titleParts[1] &&
+					isset( $xNames[$titleParts[0]] )
+				) {
+					$exists = $titleParts[0];
 				}
-			} elseif( isset( $xNames[$s->page_title] ) ) {
+			} elseif ( isset( $xNames[$s->page_title] ) ) {
 				$exists = $s->page_title;
 			}
-			if( $exists && $s->page_namespace == NS_MEDIAWIKI ) {
+
+			$title = Title::newFromRow( $s );
+			if ( $exists && $title->inNamespace( NS_MEDIAWIKI ) ) {
 				$pageFlags[$exists] = true;
-			} elseif( $exists && $s->page_namespace == NS_MEDIAWIKI_TALK ) {
+			} elseif ( $exists && $title->inNamespace( NS_MEDIAWIKI_TALK ) ) {
 				$talkFlags[$exists] = true;
 			}
 		}
@@ -290,6 +296,10 @@ class AllmessagesTablePager extends TablePager {
 	/**
 	 *  This function normally does a database query to get the results; we need
 	 * to make a pretend result using a FakeResultWrapper.
+	 * @param string $offset
+	 * @param int $limit
+	 * @param bool $descending
+	 * @return FakeResultWrapper
 	 */
 	function reallyDoQuery( $offset, $limit, $descending ) {
 		$result = new FakeResultWrapper( array() );
@@ -298,56 +308,72 @@ class AllmessagesTablePager extends TablePager {
 		$statuses = self::getCustomisedStatuses( $messageNames, $this->langcode, $this->foreign );
 
 		$count = 0;
-		foreach( $messageNames as $key ) {
+		foreach ( $messageNames as $key ) {
 			$customised = isset( $statuses['pages'][$key] );
-			if( $customised !== $this->custom &&
+			if ( $customised !== $this->custom &&
 				( $descending && ( $key < $offset || !$offset ) || !$descending && $key > $offset ) &&
 				( ( $this->prefix && preg_match( $this->prefix, $key ) ) || $this->prefix === false )
 			) {
 				$actual = wfMessage( $key )->inLanguage( $this->langcode )->plain();
 				$default = wfMessage( $key )->inLanguage( $this->langcode )->useDatabase( false )->plain();
 				$result->result[] = array(
-					'am_title'      => $key,
-					'am_actual'     => $actual,
-					'am_default'    => $default,
+					'am_title' => $key,
+					'am_actual' => $actual,
+					'am_default' => $default,
 					'am_customised' => $customised,
 					'am_talk_exists' => isset( $statuses['talks'][$key] )
 				);
 				$count++;
 			}
-			if( $count == $limit ) {
+
+			if ( $count === $limit ) {
 				break;
 			}
 		}
+
 		return $result;
 	}
 
 	function getStartBody() {
-		return Xml::openElement( 'table', array( 'class' => 'mw-datatable TablePager', 'id' => 'mw-allmessagestable' ) ) . "\n" .
+		$tableClass = $this->getTableClass();
+		return Xml::openElement( 'table', array(
+				'class' => "mw-datatable $tableClass",
+				'id' => 'mw-allmessagestable'
+			) ) .
+			"\n" .
 			"<thead><tr>
 				<th rowspan=\"2\">" .
-					$this->msg( 'allmessagesname' )->escaped() . "
+			$this->msg( 'allmessagesname' )->escaped() . "
 				</th>
 				<th>" .
-					$this->msg( 'allmessagesdefault' )->escaped() .
-				"</th>
+			$this->msg( 'allmessagesdefault' )->escaped() .
+			"</th>
 			</tr>\n
 			<tr>
 				<th>" .
-					$this->msg( 'allmessagescurrent' )->escaped() .
-				"</th>
+			$this->msg( 'allmessagescurrent' )->escaped() .
+			"</th>
 			</tr></thead><tbody>\n";
 	}
 
-	function formatValue( $field, $value ){
-		switch( $field ){
-
+	function formatValue( $field, $value ) {
+		switch ( $field ) {
 			case 'am_title' :
-
 				$title = Title::makeTitle( NS_MEDIAWIKI, $value . $this->suffix );
-				$talk  = Title::makeTitle( NS_MEDIAWIKI_TALK, $value . $this->suffix );
+				$talk = Title::makeTitle( NS_MEDIAWIKI_TALK, $value . $this->suffix );
+				$translation = Linker::makeExternalLink(
+					'https://translatewiki.net/w/i.php?' . wfArrayToCgi( array(
+						'title' => 'Special:SearchTranslations',
+						'group' => 'mediawiki',
+						'grouppath' => 'mediawiki',
+						'query' => 'language:' . $this->getLanguage()->getCode() . '^25 ' .
+							'messageid:"MediaWiki:' . $value . '"^10 "' .
+							$this->msg( $value )->inLanguage( 'en' )->plain() . '"'
+					) ),
+					$this->msg( 'allmessages-filter-translate' )->text()
+				);
 
-				if( $this->mCurrentRow->am_customised ){
+				if ( $this->mCurrentRow->am_customised ) {
 					$title = Linker::linkKnown( $title, $this->getLanguage()->lcfirst( $value ) );
 				} else {
 					$title = Linker::link(
@@ -359,7 +385,7 @@ class AllmessagesTablePager extends TablePager {
 					);
 				}
 				if ( $this->mCurrentRow->am_talk_exists ) {
-					$talk = Linker::linkKnown( $talk , $this->talk );
+					$talk = Linker::linkKnown( $talk, $this->talk );
 				} else {
 					$talk = Linker::link(
 						$talk,
@@ -369,47 +395,58 @@ class AllmessagesTablePager extends TablePager {
 						array( 'broken' )
 					);
 				}
-				return $title . ' (' . $talk . ')';
+
+				return $title . ' '
+				. $this->msg( 'parentheses' )->rawParams( $talk )->escaped()
+				. ' '
+				. $this->msg( 'parentheses' )->rawParams( $translation )->escaped();
 
 			case 'am_default' :
 			case 'am_actual' :
 				return Sanitizer::escapeHtmlAllowEntities( $value, ENT_QUOTES );
 		}
+
 		return '';
 	}
 
-	function formatRow( $row ){
+	function formatRow( $row ) {
 		// Do all the normal stuff
 		$s = parent::formatRow( $row );
 
 		// But if there's a customised message, add that too.
-		if( $row->am_customised ){
+		if ( $row->am_customised ) {
 			$s .= Xml::openElement( 'tr', $this->getRowAttrs( $row, true ) );
 			$formatted = strval( $this->formatValue( 'am_actual', $row->am_actual ) );
-			if ( $formatted == '' ) {
+
+			if ( $formatted === '' ) {
 				$formatted = '&#160;';
 			}
+
 			$s .= Xml::tags( 'td', $this->getCellAttrs( 'am_actual', $row->am_actual ), $formatted )
 				. "</tr>\n";
 		}
+
 		return $s;
 	}
 
-	function getRowAttrs( $row, $isSecond = false ){
+	function getRowAttrs( $row, $isSecond = false ) {
 		$arr = array();
-		if( $row->am_customised ){
+
+		if ( $row->am_customised ) {
 			$arr['class'] = 'allmessages-customised';
 		}
-		if( !$isSecond ){
+
+		if ( !$isSecond ) {
 			$arr['id'] = Sanitizer::escapeId( 'msg_' . $this->getLanguage()->lcfirst( $row->am_title ) );
 		}
+
 		return $arr;
 	}
 
-	function getCellAttrs( $field, $value ){
-		if( $this->mCurrentRow->am_customised && $field == 'am_title' ){
+	function getCellAttrs( $field, $value ) {
+		if ( $this->mCurrentRow->am_customised && $field === 'am_title' ) {
 			return array( 'rowspan' => '2', 'class' => $field );
-		} elseif( $field == 'am_title' ) {
+		} elseif ( $field === 'am_title' ) {
 			return array( 'class' => $field );
 		} else {
 			return array( 'lang' => $this->langcode, 'dir' => $this->lang->getDir(), 'class' => $field );
@@ -428,16 +465,15 @@ class AllmessagesTablePager extends TablePager {
 		return SpecialPage::getTitleFor( 'Allmessages', false );
 	}
 
-	function isFieldSortable( $x ){
+	function isFieldSortable( $x ) {
 		return false;
 	}
 
-	function getDefaultSort(){
+	function getDefaultSort() {
 		return '';
 	}
 
-	function getQueryInfo(){
+	function getQueryInfo() {
 		return '';
 	}
 }
-

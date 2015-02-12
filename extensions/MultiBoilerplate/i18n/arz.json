@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25"
+		]
+	},
+	"multiboilerplate-desc": "يسمح لقالب أن يختار من صندوق منسدل موجود فوق استمارة التعديل أثناء تعديل الصفحات",
+	"multiboilerplate-legend": "اختر طبق البويلر",
+	"multiboilerplate-submit": "تحميل"
+}

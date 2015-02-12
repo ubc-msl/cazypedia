@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"MinuteElectron",
+			"Purodha",
+			"RobertL"
+		]
+	},
+	"multiboilerplate-desc": "Description of the MultiBoilerplate extension, shown on [[Special:Version]]. Do not translate or change links.",
+	"multiboilerplate-legend": "Title of the form used for selecting a boilerplate.",
+	"multiboilerplate-submit": "The text displayed on the button that loads the boilerplate into the edit box.\n\n{{Identical|Load}}",
+	"boilerplates": "The description on Special:SpecialPages",
+	"multiboilerplate-special-pagetext": "Do not translate <code>&lt;span class=plainlinks>[{<nowiki />{fullurl:</code> and <code>|action=edit}}</code> and <code>]&lt;/span></code>"
+}

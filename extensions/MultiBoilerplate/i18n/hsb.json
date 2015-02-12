@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Michawiki"
+		]
+	},
+	"multiboilerplate-desc": "Zmóžnja tekstowy element z padaceho kašćika wubrać, kotrež je wyše wobdźěłanskeho pola na wobdźełanskich stronach",
+	"multiboilerplate-legend": "Tekstowy element wubrać",
+	"multiboilerplate-submit": "Začitać",
+	"boilerplates": "K dispoziciji stejace tekstowe elementy",
+	"multiboilerplate-special-pagetext": "Tute předłohi dadźa so při wutworjenju strony awtomatisce začitać. (<span class=plainlinks>[{{fullurl:Tuta strona njeeksistuje|action=edit}} demo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Tekstowe elementy so w LocalSettings definuja.",
+	"multiboilerplate-special-define-in-interface": "Tekstowe elementy so w [[MediaWiki:Multiboilerplate]] definuja."
+}

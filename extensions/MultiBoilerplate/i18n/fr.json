@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Crochet.david",
+			"Grondin",
+			"IAlex"
+		]
+	},
+	"multiboilerplate-desc": "Permet de sélectionner une page ou un modèle à incorporer à partir d’une boîte en haut du formulaire d’édition d’une page.",
+	"multiboilerplate-legend": "Sélectionner la page à incorporer",
+	"multiboilerplate-submit": "Charger",
+	"boilerplates": "Modèles disponibles",
+	"multiboilerplate-special-pagetext": "Ces modèles peuvent être préchargé à la création de pages. (<span class=plainlinks>[{{fullurl:Cette page n'existe pas|action=edit}} démo]</span>)",
+	"multiboilerplate-special-define-in-localsettings": "Les modèles sont définis dans LocalSettings.",
+	"multiboilerplate-special-define-in-interface": "Les modèles sont définis dans [[MediaWiki:Multiboilerplate]]."
+}
